@@ -20,10 +20,10 @@ component {
 		variables.serverType = server.coldfusion.productname;
 		variables.dbinfo = new dbInfoProxy();
 		variables.queryService = new query();
-		variables.cache = { columns = { }, cfcFunctions = { }, datasourceTypes = { } }; 
+		variables.cache = { columns = { }, cfcFunctions = { }, datasourceTypes = { } };
 
 		variables.options = persistenceOptions;
- 		var defaultOptions = { 
+ 		var defaultOptions = {
  			persistenceBeanName = 'persistence',
  			cfcFolder = 'persistence',
  			globalHandlerBean = 'global',
@@ -33,7 +33,7 @@ component {
  			flagNew = '',
  			useIsValid = true,
  			logSql = false
- 		};		
+ 		};
 		structAppend( variables.options, defaultOptions, false );
 
 		if ( structKeyExists( arguments, 'beanFactory' ) ) {
@@ -107,7 +107,7 @@ component {
 	// wrapper function around get, to set getOrNew option without passing it in options struct
 	public any function getOrNew( required string tableName, required any primaryKeyId, struct options = { } ) {
 		options.getOrNew = true;
-		return get( tableName, primaryKeyId, options ); 
+		return get( tableName, primaryKeyId, options );
 	}
 
 	public array function getByProperties( required string tableName, required struct properties, struct options = { } ) {
@@ -140,7 +140,7 @@ component {
 					thisRow[ thisColumn.name ] = !!thisRow[ thisColumn.name ];
 				}
 			}
-			arrayAppend( result, thisRow ); 
+			arrayAppend( result, thisRow );
 		}
 
 		// handle includes -- options.include should either be a single tableName string/struct, or an array
@@ -190,7 +190,7 @@ component {
 						arrayAppend( validation, '''#column.name#'' is too long, the string would be truncated.' );
 					}
 
-				} 
+				}
 
 				// add array to validation result if it contains error messages
 				if ( arrayLen( validation ) ) {
@@ -252,7 +252,7 @@ component {
 			} else {
 				structAppend( thisResult, _save( tableName, thisPropertyStruct, structKeyExists( thisOptions, 'forceInsert' ) && thisOptions.forceInsert, structKeyExists( options, 'logsql' ) && options.logsql ), true );
 			}
-			
+
 			// after save event handling - the after events are passed the current result struct so that it can be determined if a save was successful
 			if ( cfcFunctionExists( tableName, 'afterSave' ) ) {
 				variables.beanFactory.getBean( tableName & variables.options.cfcFolder ).afterSave( thisPropertyStruct, thisResult, thisOptions );
@@ -291,7 +291,7 @@ component {
 		} else {
 			structAppend( result, _updateByProperties( tableName, propertiesToUpdate, properties, structKeyExists( options, 'logsql' ) && options.logsql ), true );
 		}
-			
+
 		// after update event handling - the after event is passed the result struct so that it can be determined if a update was successful
 		if ( cfcFunctionExists( tableName, 'afterUpdate' ) ) {
 			variables.beanFactory.getBean( tableName & variables.options.cfcFolder ).afterUpdate( propertiesToUpdate, properties, result, options );
@@ -337,7 +337,7 @@ component {
 		} else {
 			structAppend( result, _deleteByProperties( tableName, properties, structKeyExists( options, 'logsql' ) && options.logsql ), true );
 		}
-			
+
 		// after delete event handling - the after event is passed the result struct so that it can be determined if a delete was successful
 		if ( cfcFunctionExists( tableName, 'afterDelete' ) ) {
 			variables.beanFactory.getBean( tableName & variables.options.cfcFolder ).afterDelete( properties, result, options );
@@ -375,7 +375,7 @@ component {
 				}
 				// if not-null foreign keys found, retrieve those rows from database
 				if ( arrayLen( foreignKeyIds ) ) {
-					var propStruct[ thisIncludePrimaryKey ] = foreignKeyIds;				
+					var propStruct[ thisIncludePrimaryKey ] = foreignKeyIds;
 					var thisIncludeResult = getByProperties( thisInclude.name, propStruct, thisInclude );
 				}
 				// add results to original result
@@ -387,7 +387,7 @@ component {
 				/*
 					Assumption: if the include is not found in the current table, it must be the name of another related table.
 					The way this is structured right now an exception will be thrown if the include is not the name of another table
-					in the database (when getColumns is called), and it will be ignored if there isn't a foreign key there referencing 
+					in the database (when getColumns is called), and it will be ignored if there isn't a foreign key there referencing
 					the original table.
 				*/
 				// one to many
@@ -398,7 +398,7 @@ component {
 					for ( var row in result ) {
 						// null check is necessary because in the case of new() getincludes() calls there most likely won't be a primary key in the result
 						if ( structKeyExists( row, columns.primaryKey.name ) && !isNull( row[ columns.primaryKey.name ] ) ) {
-							var propStruct[ includeForeignKeys[ includeTableName ] ] = row[ columns.primaryKey.name ];	
+							var propStruct[ includeForeignKeys[ includeTableName ] ] = row[ columns.primaryKey.name ];
 							row[ thisInclude.name ] = getByProperties( thisInclude.name, propStruct, thisInclude );
 						}
 					}
@@ -515,7 +515,10 @@ component {
 		for ( var param in params ) {
 			for( var thisValue in param.value ) {
 				// strict null support workaround to preserve cf and railo compatibility -- see https://issues.jboss.org/browse/RAILO-2371
-        var argColl = { 'name' = 'param_' & index, 'value' = thisValue, 'cfsqltype' = getColumnInfoFromType( tableName, param.type ).queryparam, 'null' = param.isNull };
+		        var argColl = { 'name' = 'param_' & index, 'value' = thisValue, 'cfsqltype' = getColumnInfoFromType( tableName, param.type ).queryparam, 'null' = param.isNull };
+		        if (getColumnInfoFromType( tableName, param.type ).validation == 'numeric') {
+		        	argColl['scale'] = param.decimal_digits;
+		        }
 				variables.queryService.addParam( argumentCollection = argColl );
 				index++;
 			}
@@ -525,7 +528,7 @@ component {
 			var queryResult = variables.queryService.execute();
 			result[ 'prefix' ] = queryResult.getPrefix();
 			result[ 'result' ] = queryResult.getResult();
-		} 
+		}
 		catch( any e ) {
 			// TODO: handle the different ways Adobe CF and Railo return query error messages
 			// writeDump( e ); abort;
@@ -534,7 +537,7 @@ component {
 		}
 
 		if ( variables.options.logSql || logSql ) logQuery( sql, params, result );
-		
+
 		return result;
 	}
 
@@ -555,9 +558,9 @@ component {
 				} else {
 					thisProperty = isArray( properties[ key ] ) ? properties[ key ] : [ properties[ key ] ];
 				}
-				arrayAppend( params, { 'name' = columns.columns[ columnIndex ].name, 'value' = thisProperty, 'type' = columns.columns[ columnIndex ].type, 'isNull' = setFieldNull, 'operator' = ( listLen( key, variables.options.delimiter ) == 2 && arrayFind( operators, listLast( key, variables.options.delimiter ) ) ) ? listLast( key, variables.options.delimiter ) : '=' } );	
+				arrayAppend( params, { 'name' = columns.columns[ columnIndex ].name, 'value' = thisProperty, 'type' = columns.columns[ columnIndex ].type, 'decimal_digits' = columns.columns[ columnIndex ].decimal_digits, 'isNull' = setFieldNull, 'operator' = ( listLen( key, variables.options.delimiter ) == 2 && arrayFind( operators, listLast( key, variables.options.delimiter ) ) ) ? listLast( key, variables.options.delimiter ) : '=' } );
 			}
-		}		
+		}
 
 		return params;
 	}
@@ -582,8 +585,8 @@ component {
 				var thisSep = '';
 				sql.where &= separator & getQualifiedColumnName( param.name, fullTableName, databaseQuotes ) & ' IN(';
 				for ( var thisValue in param.value ) {
-					sql.where &= thisSep & ':param_' & index; 
-					index++; 
+					sql.where &= thisSep & ':param_' & index;
+					index++;
 					thisSep = ',';
 				}
 				sql.where &= ')';
@@ -634,7 +637,7 @@ component {
 		for ( var param in params ) {
 			arrayAppend( sql.params, param );
 			sql.update &= separator & getQualifiedColumnName( param.name, fullTableName, databaseQuotes ) & '=:param_' & index;
-			separator = ','; 
+			separator = ',';
 			index++;
 		}
 
@@ -646,8 +649,8 @@ component {
 				var thisSep = '';
 				sql.where &= separator & getQualifiedColumnName( param.name, fullTableName, databaseQuotes ) & ' IN(';
 				for ( var thisValue in param.value ) {
-					sql.where &= thisSep & ':param_' & index; 
-					index++; 
+					sql.where &= thisSep & ':param_' & index;
+					index++;
 					thisSep = ',';
 				}
 				sql.where &= ')';
@@ -656,7 +659,7 @@ component {
 				index++;
 			}
 			separator = ' AND ';
-		}		
+		}
 
 		sql.statement = 'UPDATE ' & databaseQuotes.start & fullTableName & databaseQuotes.end & ' SET ' & sql.update & ' WHERE ' & sql.where;
 
@@ -692,8 +695,8 @@ component {
 				var thisSep = '';
 				sql.where &= separator & getQualifiedColumnName( param.name, fullTableName, databaseQuotes ) & ' IN(';
 				for ( var thisValue in param.value ) {
-					sql.where &= thisSep & ':param_' & index; 
-					index++; 
+					sql.where &= thisSep & ':param_' & index;
+					index++;
 					thisSep = ',';
 				}
 				sql.where &= ')';
