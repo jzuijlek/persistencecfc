@@ -217,7 +217,8 @@ component {
 
 	public any function save( required string tableName, required any propertyStructs, struct options = { } ) {
 		var result = [ ];
-		var propertyStructArray = isArray( propertyStructs ) ? propertyStructs : [ propertyStructs ];
+		var propertyStructArray = isStruct( propertyStructs ) ? [ propertyStructs ] : propertyStructs;
+		propertyStructArray = isArray( propertyStructArray ) ? propertyStructArray : [ propertyStructArray ];
 
 		for ( var properties in propertyStructArray ) {
 			var thisPropertyStruct = duplicate( properties ); // prevent modifications to original passed in struct
@@ -434,10 +435,11 @@ component {
 			} else {
 				result.success = false;
 			}
+			properties[ primarykey ] = whereProperties[ primarykey ];
 		} else {
 			result = executeQuery( tableName, buildInsertQuery( tableName, params ).statement, params, logSql );
 			if ( result.success && result.prefix.recordcount == 1  ) {
-				result[ 'primarykey' ] = result.prefix.generatedKey;
+				result[ 'primarykey' ] = structKeyExists( properties, primarykey ) && !isNull( properties[ primarykey ] ) ? properties[ primarykey ] : result.prefix.generatedKey;
 				result.message = 'Insert successful.';
 			} else {
 				result.success = false;
